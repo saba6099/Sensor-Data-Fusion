@@ -35,7 +35,7 @@ class MeasurementModel():
         return measurement
 
 
-def create_model_parameters(T=2, s2_x=0.1 ** 2, s2_y=0.1 ** 2 , lambda2=0.3 ** 2):
+def create_model_parameters(T=2, s2_x=10, s2_y=10, lambda2=300):
     # Motion model parameters
     F = np.array([[1, T],
                   [0, 1]])
@@ -59,7 +59,7 @@ def create_model_parameters(T=2, s2_x=0.1 ** 2, s2_y=0.1 ** 2 , lambda2=0.3 ** 2
     return A, H, Q, R
 
 
-def simulate_system(K, x0, X):
+def simulate_system(K, x0):
     (A, H, Q, R) = create_model_parameters()
 
     # Create models
@@ -76,7 +76,7 @@ def simulate_system(K, x0, X):
     x = x0
     for k in range(K):
         x = motion_model(x)
-        z = meas_model(X[k])
+        z = meas_model(x)
 
         state[k, :] = x
         meas[k, :] = z
@@ -86,7 +86,6 @@ def simulate_system(K, x0, X):
 
 if __name__ == '__main__':
     np.random.seed(21)
-
     (state, meas) = simulate_system(K=20, x0=np.array([0, 0.1, 0, 0.1]))
 
     plt.figure(figsize=(7, 5))
