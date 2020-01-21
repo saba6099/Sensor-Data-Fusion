@@ -14,7 +14,7 @@ from kalman_filter import KalmanFilter
 from simulate_model import simulate_system, create_model_parameters
 
 np.random.seed(21)
-(A, H, Q, R) = create_model_parameters()
+(A, H, Q, R) = model_parameters()
 K = 20
 # initial state
 # x = np.array([0, 0.1, 0, 0.1])
@@ -51,6 +51,10 @@ for k in range(K):
 
     est_state[k, :] = x
     est_cov[k, ...] = P
+
+mean = [est_state[:, 0], est_state[:, 2]]
+cov = [est_cov[:, 0], est_cov[:, 2]]
+
 
 plt.figure(figsize=(7, 5))
 plt.plot(state[:, 0], state[:, 2], '-bo')

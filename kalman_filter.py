@@ -3,25 +3,24 @@
 Created on Tue Dec 31 17:58:01 2019
 
 @author: Tejas
+@author: Saba
 """
 import numpy as np
 
 
 class KalmanFilter():
-    def __init__(self, A, H, Q, R, x_0, P_0):
-        # Model parameters
-        self.A = A
+    def __init__(self, F, H, D, R, x_0, P_0):
+        self.F = F
         self.H = H
-        self.Q = Q
+        self.D = D
         self.R = R
 
-        # Initial state
         self._x = x_0
         self._P = P_0
 
     def predict(self):
-        self._x = self.A @ self._x
-        self._P = self.A @ self._P @ self.A.transpose() + self.Q
+        self._x = self.F @ self._x
+        self._P = self.F @ self._P @ self.F.transpose() + self.D
 
     def update(self, z):
         self.S = self.H @ self._P @ self.H.transpose() + self.R

@@ -2,41 +2,53 @@
 """
 Created on Tue Dec 31 17:54:21 2019
 
-@author: Tejas
+@author: Tejas and Saba
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-class MotionModel():
-    def __init__(self, A, Q):
-        self.A = A
-        self.Q = Q
+class DynamicsModel():
+    def __init__(self, F, D):
+        self.F = F
+        self.D = D
 
-        (m, _) = Q.shape
-        self.zero_mean = np.zeros(m)
+        self.zero_mean = np.zeros(D.shape[0])
 
-    def __call__(self, x):
-        new_state = self.A @ x + np.random.multivariate_normal(self.zero_mean, self.Q)
+    def return_motion_model(self, x):
+        new_state = self.F @ x + np.random.multivariate_normal(self.zero_mean, self.D)
         return new_state
 
 
-class MeasurementModel():
+class SensorModel():
     def __init__(self, H, R):
         self.H = H
         self.R = R
 
-        (n, _) = R.shape
-        self.zero_mean = np.zeros(n)
+        self.zero_mean = np.zeros(R.shape[0])
 
-    def __call__(self, x):
+    def return_meas_model(self, x):
         measurement = self.H @ x + np.random.multivariate_normal(self.zero_mean, self.R)
         return measurement
 
+def simulate_system(K, x):
+    (F, H, D, R) = model_parameters()
+    dynamic_model = DynamicsModel(F, D)
+    sensor_model = SensorModel(H, R)
+    state = np.zeros((K, D.shape[0]))
+    meas = np.zeros((K, R.shape[0]))
 
-def create_model_parameters(T=2, s2_x=10, s2_y=10, lambda2=300):
-    # Motion model parameters
+    for k in range(K):
+        x = dynamic_model.return_motion_model(x)
+        z = sensor_model.return_meas_model(x)
+
+        state[k, :] = x
+        meas[k, :] = z
+
+    return state, meas
+
+def model_parameters(T=2, s2_x=10, s2_y=10, lambda_sq=300):
     F = np.array([[1, T],
                   [0, 1]])
     base_sigma = np.array([[T ** 3 / 3, T ** 2 / 2],
@@ -46,54 +58,15 @@ def create_model_parameters(T=2, s2_x=10, s2_y=10, lambda2=300):
     sigma_y = s2_y * base_sigma
 
     zeros_2 = np.zeros((2, 2))
-    A = np.block([[F, zeros_2],
+    F = np.block([[F, zeros_2],
                   [zeros_2, F]])
-    Q = np.block([[sigma_x, zeros_2],
+    D = np.block([[sigma_x, zeros_2],
                   [zeros_2, sigma_y]])
 
-    # Measurement model parameters
     H = np.array([[1, 0, 0, 0],
                   [0, 0, 1, 0]])
-    R = lambda2 * np.eye(2)
+    R = lambda_sq * np.eye(2)
 
-    return A, H, Q, R
-
-
-def simulate_system(K, x0):
-    (A, H, Q, R) = create_model_parameters()
-
-    # Create models
-    motion_model = MotionModel(A, Q)
-    meas_model = MeasurementModel(H, R)
-
-    (m, _) = Q.shape
-    (n, _) = R.shape
-
-    state = np.zeros((K, m))
-    meas = np.zeros((K, n))
-
-    # initial state
-    x = x0
-    for k in range(K):
-        x = motion_model(x)
-        z = meas_model(x)
-
-        state[k, :] = x
-        meas[k, :] = z
-
-    return state, meas
+    return F, H, D, R
 
 
-if __name__ == '__main__':
-    np.random.seed(21)
-    (state, meas) = simulate_system(K=20, x0=np.array([0, 0.1, 0, 0.1]))
-
-    plt.figure(figsize=(7, 5))
-    plt.plot(state[:, 0], state[:, 2], '-bo')
-    plt.plot(meas[:, 0], meas[:, 1], 'rx')
-    plt.xlabel('x [m]')
-    plt.ylabel('y [m]')
-    plt.legend(['true state', 'observed measurement'])
-    plt.axis('square')
-    plt.tight_layout(pad=0)
-    plt.show()
